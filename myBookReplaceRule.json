@@ -1,0 +1,32 @@
+[
+  {
+    "enable": true,
+    "id": 2,
+    "isRegex": true,
+    "regex": "(^\\s{0,4}第.{1,8}章.{0,30}\\n)+",
+    "replaceSummary": "去掉正文重复标题",
+    "replacement": " $1",
+    "serialNumber": 2,
+    "useTo": ""
+  },
+  {
+    "enable": true,
+    "id": 3,
+    "isRegex": false,
+    "regex": "木仓",
+    "replaceSummary": "禁词-枪",
+    "replacement": "枪",
+    "serialNumber": 3,
+    "useTo": ""
+  },
+  {
+    "enable": true,
+    "id": 4,
+    "isRegex": true,
+    "regex": "玫瑰小说网.*?（群号）",
+    "replaceSummary": "玫瑰小说网广告",
+    "replacement": "",
+    "serialNumber": 4,
+    "useTo": ""
+  }
+]
