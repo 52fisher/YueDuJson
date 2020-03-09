@@ -38,11 +38,11 @@
     {
         "enable": true,
         "name": "Chapter/Section/Part/Episode 序号 标题",
-        "rule": "^[ 　\\t]{0,4}(?:[Cc]hapter|[Ss]ection|[Pp]art|ＰＡＲＴ|[Ee]pisode|(?:内容|文章)?简介|文案|前言|序章|楔子|正文(?!完)|终章|后记|尾声|番外)\\s{0,4}\\d{1,4}.{0,3][]][[][[[][[0}$",
+        "rule": "^[ 　\\t]{0,4}(?:[Cc]hapter|[Ss]ection|[Pp]art|ＰＡＲＴ|[Ee]pisode|(?:内容|文章)?简介|文案|前言|序章|楔子|正文(?!完)|终章|后记|尾声|番外)\\s{0,4}\\d{1,4}.{0,30}$",
         "serialNumber": 6
     },
     {
-        "enable": true,
+        "enable": false,
         "name": "Chapter(去简介)",
         "rule": "^[ 　\\t]{0,4}(?:[Cc]hapter|[Ss]ection|[Pp]art|ＰＡＲＴ|[Ee]pisode)\\s{0,4}\\d{1,4}.{0,30}$",
         "serialNumber": 7
