@@ -1,0 +1,49 @@
+{
+      "bookSourceComment": "",
+        "bookSourceGroup": "耽美完结",
+          "bookSourceName": "腐书网🙆",
+            "bookSourceType": 0,
+              "bookSourceUrl": "https://wap.fushuwang.org",
+                "bookUrlPattern": "https://wap.fushuwang.org/\\w+?/\\d+.html.*",
+                  "customOrder": -112916,
+                    "enabled": true,
+                      "enabledExplore": true,
+                        "exploreUrl": "本站推荐::https://wap.fushuwang.org/best/<,{{\"index_\"+page+\".html\"}}>\n2021年::https://wap.fushuwang.org/2021y/<,{{\"index_\"+page+\".html\"}}>\n2020年::https://wap.fushuwang.org/2020y/<,{{\"index_\"+page+\".html\"}}>\n现代都市::https://wap.fushuwang.org/xiandaidushi/<,{{\"index_\"+page+\".html\"}}>\n古代架空::https://wap.fushuwang.org/gudaijiakong/<,{{\"index_\"+page+\".html\"}}>\n同人bl::https://wap.fushuwang.org/tongrenxiaoshuo/<,{{\"index_\"+page+\".html\"}}>\n百合bl::https://wap.fushuwang.org/baihexiaoshuo/<,{{\"index_\"+page+\".html\"}}>\n末世专题::https://wap.fushuwang.org/mshwzt/<,{{\"index_\"+page+\".html\"}}>\n修真专题::https://wap.fushuwang.org/xzhwzt/<,{{\"index_\"+page+\".html\"}}>\n穿越重生::https://wap.fushuwang.org/chuanyuechongsheng/<,{{\"index_\"+page+\".html\"}}>\n玄幻网游::https://wap.fushuwang.org/xuanhuanwangyou/<,{{\"index_\"+page+\".html\"}}>",
+                          "lastUpdateTime": 1619294904443,
+                            "loginUrl": "",
+                              "ruleBookInfo": {
+                                      "intro": "class.fudm.0@html\n@js:\nr = result.match(/([\\s\\S]+?)(?=.{0,6}第.{1,8}章|正文|楔子|卷首语|前言|☆)/)\nresult= !!r[0]?r[0]:result.substring(0,300)",
+                                          "tocUrl": "@js:baseUrl.replace(/wap/,\"www\")"
+                              },
+                                "ruleContent": {
+                                        "content": "id.text@div@textNodes"
+                                },
+                                  "ruleExplore": {
+                                          "author": "@css: a:last-of-type@text##.*——",
+                                              "bookList": "class.article-list.0@tag.li",
+                                                  "bookUrl": "@css: a:last-of-type@href",
+                                                      "kind": "text\n@js:var t = result.toString().slice(1).match(/^\\[(.*?)\\]/);\nresult = !!t?t[1]:\"\"",
+                                                          "lastChapter": "tag.span@text",
+                                                              "name": "@css: a:last-of-type@text##——.*",
+                                                                  "wordCount": ""
+                                  },
+                                    "ruleSearch": {
+                                            "author": "tag.a.0@text##.*——",
+                                                "bookList": "class.article-list@li",
+                                                    "bookUrl": "tag.a.0@href",
+                                                        "name": "tag.a.0@text##——.*"
+                                    },
+                                      "ruleToc": {
+                                              "chapterList": "//select[@name=\"titleselect\"]/option",
+                                                  "chapterName": "text##.*\\(|\\)",
+                                                      "chapterUrl": "//@value"
+                                      },
+                                        "searchUrl": "https://wap.fushuwang.org/search/index.php,{\n  \"charset\": \"gbk\",\n  \"method\": \"POST\",\n  \"body\": \"keyboard={{key}}&tempid=2&tbname=article&show=title\"\n}",
+                                          "weight": 0
+}
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+}
