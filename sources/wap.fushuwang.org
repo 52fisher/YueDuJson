@@ -1,7 +1,7 @@
 {
   "bookSourceComment": "",
   "bookSourceGroup": "🌼耽美完结",
-  "bookSourceName": "腐书网🙆",
+  "bookSourceName": "腐书网",
   "bookSourceType": 0,
   "bookSourceUrl": "https://wap.fushuwang.org",
   "bookUrlPattern": "https://wap.fushuwang.org/\\w+?/\\d+.html.*",
