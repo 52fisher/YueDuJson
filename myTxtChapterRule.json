@@ -193,7 +193,7 @@
   },
   {
     "id": -100,
-    "enable": true,
+    "enable": false,
     "name": "默认分章规则",
     "rule": "",
     "example": "兜底规则，请勿改动此内容",
