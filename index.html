@@ -630,6 +630,9 @@
               <label>
                 <input type="radio" name="testSource" value="txt" disabled id="txtRadio" onchange="switchTestSource()"> TXT小说
               </label>
+              <label>
+                <input type="radio" name="testSource" value="example" onchange="switchTestSource()"> 当前示例
+              </label>
             </div>
           </div>
           <textarea class="test-input" id="testInput" placeholder="每行一条测试内容..."></textarea>
@@ -1202,8 +1205,16 @@ NO.3 大写NO
     function setDebugRule(id) {
       currentDebugId = id;
       renderTable();
+      
+      const source = document.querySelector('input[name="testSource"]:checked').value;
+      if (source === 'example') {
+        const rule = rules.find(r => r.id === currentDebugId);
+        if (rule && rule.example) {
+          document.getElementById('testInput').value = rule.example;
+        }
+      }
+      
       runTest();
-      // 滚动到调试面板
       document.querySelector('.debug-panel').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -1214,6 +1225,17 @@ NO.3 大写NO
       } else if (source === 'txt') {
         if (txtContent) {
           document.getElementById('testInput').value = txtContent;
+        } else {
+          document.getElementById('testInput').value = '';
+        }
+      } else if (source === 'example') {
+        if (currentDebugId) {
+          const rule = rules.find(r => r.id === currentDebugId);
+          if (rule && rule.example) {
+            document.getElementById('testInput').value = rule.example;
+          } else {
+            document.getElementById('testInput').value = '';
+          }
         } else {
           document.getElementById('testInput').value = '';
         }
@@ -1247,21 +1269,52 @@ NO.3 大写NO
       let matchCount = 0;
       let noMatchCount = 0;
       let displayCount = 0;
-      const maxDisplay = 30; // TXT模式下最多显示30条
+      const maxDisplay = 30;
       
       try {
         const regex = new RegExp(rule.rule, 'gm');
         
         let results = '';
         
+        const paddedText = '\n' + testInput;
+        
+        const matchRanges = [];
+        let match;
+        while ((match = regex.exec(paddedText)) !== null) {
+          matchRanges.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            text: match[0]
+          });
+        }
+        
+        const lines = paddedText.split('\n');
+        const lineOffsets = [];
+        let currentOffset = 0;
         for (const line of lines) {
-          const trimmedLine = line.trim();
+          lineOffsets.push({
+            start: currentOffset,
+            end: currentOffset + line.length + 1,
+            text: line
+          });
+          currentOffset += line.length + 1;
+        }
+        
+        for (let i = 1; i < lineOffsets.length; i++) {
+          const lineInfo = lineOffsets[i];
+          const trimmedLine = lineInfo.text.trim();
           if (!trimmedLine) continue;
           
-          const matches = trimmedLine.match(regex);
-          if (matches && matches.length > 0) {
+          let isMatch = false;
+          for (const mr of matchRanges) {
+            if (mr.start < lineInfo.end && mr.end > lineInfo.start) {
+              isMatch = true;
+              break;
+            }
+          }
+          
+          if (isMatch) {
             matchCount++;
-            // TXT模式下只显示匹配的行，且限制数量
             if (isTxtMode) {
               if (displayCount < maxDisplay) {
                 results += `<div class="test-line chapter-title">${escapeHtml(trimmedLine)}</div>`;
@@ -1272,7 +1325,6 @@ NO.3 大写NO
             }
           } else {
             noMatchCount++;
-            // 内置模式下显示不匹配的行
             if (!isTxtMode) {
               results += `<div class="test-line no-match">${escapeHtml(trimmedLine)}</div>`;
             }
