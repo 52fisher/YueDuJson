@@ -441,6 +441,11 @@
       font-size: 13px;
       color: #6b7280;
     }
+    .debug-options label.rule-type {
+      padding-left: 12px;
+      border-left: 1px solid #d1d5db;
+      margin-left: 4px;
+    }
     .debug-options input[type="radio"] {
       width: auto;
     }
@@ -633,6 +638,12 @@
               <label>
                 <input type="radio" name="testSource" value="example" onchange="switchTestSource()"> 当前示例
               </label>
+              <label class="rule-type">
+                <input type="radio" name="testRuleType" value="chapter" checked onchange="runTest()"> 章节规则
+              </label>
+              <label class="rule-type">
+                <input type="radio" name="testRuleType" value="volume" onchange="runTest()"> 分卷规则
+              </label>
             </div>
           </div>
           <textarea class="test-input" id="testInput" placeholder="每行一条测试内容..."></textarea>
@@ -658,8 +669,12 @@
         <input type="text" id="addName" placeholder="输入规则名称">
       </div>
       <div class="form-group">
-        <label>正则表达式</label>
-        <textarea id="addRule" placeholder="输入正则表达式..." rows="3"></textarea>
+        <label>章节规则</label>
+        <textarea id="addChapterRule" placeholder="输入章节正则表达式..." rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>分卷规则</label>
+        <textarea id="addVolumeRule" placeholder="输入分卷正则表达式（可选）..." rows="3"></textarea>
       </div>
       <div class="form-group">
         <label>示例</label>
@@ -668,6 +683,36 @@
       <div class="btn-group">
         <button class="btn btn-primary" onclick="addRule()">添加</button>
         <button class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导出格式选择弹窗 -->
+  <div class="modal" id="exportModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>选择导出格式</h2>
+        <button class="close-btn" onclick="closeExportModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;padding:10px;border:1px solid #d1d5db;border-radius:6px;">
+          <input type="radio" name="exportFormat" value="original" checked style="margin-top:3px;">
+          <div>
+            <div style="font-weight:600;color:#1f2937;">Legado 原版</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:2px;">去掉 volumeRule 字段，将 chapterRule 改回 rule 导出</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;padding:10px;border:1px solid #d1d5db;border-radius:6px;margin-top:8px;">
+          <input type="radio" name="exportFormat" value="md3" style="margin-top:3px;">
+          <div>
+            <div style="font-weight:600;color:#1f2937;">Legado with MD3</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:2px;">保留 chapterRule 和 volumeRule 字段（支持分卷规则）</div>
+          </div>
+        </label>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="doExport()">导出</button>
+        <button class="btn btn-secondary" onclick="closeExportModal()">取消</button>
       </div>
     </div>
   </div>
@@ -906,7 +951,8 @@ NO.3 大写NO
             "id": -1,
             "enable": true,
             "name": "目录(去空白)",
-            "rule": "(?<=[　\\s])(?:序章|楔子|正文(?!完|结)|终章|后记|尾声|番外|第\\s{0,4}[\\d〇零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]+?\\s{0,4}(?:章|节(?!课)|卷|集(?![合和]))).{0,30}$",
+            "chapterRule": "(?<=[　\\s])(?:序章|楔子|正文(?!完|结)|终章|后记|尾声|番外|第\\s{0,4}[\\d〇零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]+?\\s{0,4}(?:章|节(?!课)|卷|集(?![合和]))).{0,30}$",
+            "volumeRule": "第\\s{0,4}[\\d〇零一二两三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾佰仟]+?\\s{0,4}(?:卷|集(?![合和]))",
             "example": "第一章 假装第一章前面有空白但我不要",
             "serialNumber": 0
           },
@@ -914,7 +960,8 @@ NO.3 大写NO
             "id": -100,
             "enable": false,
             "name": "默认分章规则",
-            "rule": "",
+            "chapterRule": "",
+            "volumeRule": "",
             "example": "兜底规则，请勿改动此内容",
             "serialNumber": 99
           }
@@ -954,6 +1001,20 @@ NO.3 大写NO
 
     // 确保序号是连续的
     function ensureSerialContinuity() {
+      // 数据兼容：将旧的 rule 字段迁移到 chapterRule，并补充 volumeRule
+      rules.forEach(rule => {
+        if (rule.rule !== undefined && rule.chapterRule === undefined) {
+          rule.chapterRule = rule.rule;
+          delete rule.rule;
+        }
+        if (rule.chapterRule === undefined) {
+          rule.chapterRule = '';
+        }
+        if (rule.volumeRule === undefined) {
+          rule.volumeRule = '';
+        }
+      });
+      
       const non99Rules = rules.filter(r => r.serialNumber !== 99);
       non99Rules.sort((a, b) => a.serialNumber - b.serialNumber);
       
@@ -971,7 +1032,8 @@ NO.3 大写NO
       const filtered = searchText 
         ? sorted.filter(r => 
             r.name.toLowerCase().includes(searchText) || 
-            r.rule.toLowerCase().includes(searchText) || 
+            (r.chapterRule || '').toLowerCase().includes(searchText) || 
+            (r.volumeRule || '').toLowerCase().includes(searchText) ||
             r.example.toLowerCase().includes(searchText)
           )
         : sorted;
@@ -1006,12 +1068,20 @@ NO.3 大写NO
             </div>
             <div class="rule-card-body">
               <div class="rule-card-field">
-                <span class="rule-card-label">正则规则</span>
+                <span class="rule-card-label">章节规则</span>
                 <span class="rule-card-value editable" 
                       contenteditable="true" 
-                      onblur="updateField(${rule.id}, 'rule', this.textContent)"
+                      onblur="updateField(${rule.id}, 'chapterRule', this.textContent)"
                       onkeydown="handleKeydown(event, this)"
-                      onclick="event.stopPropagation()">${rule.rule || '(空)'}</span>
+                      onclick="event.stopPropagation()">${rule.chapterRule || '(空)'}</span>
+              </div>
+              <div class="rule-card-field">
+                <span class="rule-card-label">分卷规则</span>
+                <span class="rule-card-value editable" 
+                      contenteditable="true" 
+                      onblur="updateField(${rule.id}, 'volumeRule', this.textContent)"
+                      onkeydown="handleKeydown(event, this)"
+                      onclick="event.stopPropagation()">${rule.volumeRule || '(空)'}</span>
               </div>
               <div class="rule-card-field">
                 <span class="rule-card-label">示例</span>
@@ -1109,7 +1179,8 @@ NO.3 大写NO
         id: newId,
         enable: true,
         name: '新规则',
-        rule: '',
+        chapterRule: '',
+        volumeRule: '',
         example: '',
         serialNumber: currentSerial + 1
       };
@@ -1133,7 +1204,8 @@ NO.3 大写NO
     function openAddModal() {
       document.getElementById('addModal').classList.add('active');
       document.getElementById('addName').value = '';
-      document.getElementById('addRule').value = '';
+      document.getElementById('addChapterRule').value = '';
+      document.getElementById('addVolumeRule').value = '';
       document.getElementById('addExample').value = '';
       document.getElementById('addName').focus();
     }
@@ -1144,7 +1216,8 @@ NO.3 大写NO
 
     function addRule() {
       const name = document.getElementById('addName').value.trim();
-      const rule = document.getElementById('addRule').value.trim();
+      const chapterRule = document.getElementById('addChapterRule').value.trim();
+      const volumeRule = document.getElementById('addVolumeRule').value.trim();
       const example = document.getElementById('addExample').value.trim();
       
       if (!name) {
@@ -1176,7 +1249,8 @@ NO.3 大写NO
         id: newId,
         enable: true,
         name: name,
-        rule: rule,
+        chapterRule: chapterRule,
+        volumeRule: volumeRule,
         example: example,
         serialNumber: insertSerial
       };
@@ -1218,6 +1292,29 @@ NO.3 大写NO
       document.querySelector('.debug-panel').scrollIntoView({ behavior: 'smooth' });
     }
 
+    function parseInlineFlags(pattern) {
+      let flags = '';
+      let result = pattern;
+      
+      const inlineFlagRegex = /^\(\?([imsux]+)\)/;
+      const match = result.match(inlineFlagRegex);
+      if (match) {
+        flags = match[1];
+        result = result.substring(match[0].length);
+      }
+      
+      const globalFlagRegex = /\(\?([imsux]+)-([imsux]*)\)/g;
+      result = result.replace(globalFlagRegex, '');
+      
+      const groupFlagRegex = /\(\?([imsux]+):/g;
+      result = result.replace(groupFlagRegex, '(?:');
+      
+      const groupFlagOffRegex = /\(\?-([imsux]+):/g;
+      result = result.replace(groupFlagOffRegex, '(?:');
+      
+      return { pattern: result, flags };
+    }
+
     function switchTestSource() {
       const source = document.querySelector('input[name="testSource"]:checked').value;
       if (source === 'builtIn') {
@@ -1255,8 +1352,12 @@ NO.3 大写NO
       const testInput = document.getElementById('testInput').value;
       const lines = testInput.split('\n').filter(line => line.trim());
       
-      if (!rule.rule) {
-        document.getElementById('testResults').innerHTML = '<span style="color:#f59e0b">规则为空，无法测试</span>';
+      // 根据选择的规则类型获取对应的正则
+      const ruleType = document.querySelector('input[name="testRuleType"]:checked').value;
+      const rulePattern = ruleType === 'volume' ? rule.volumeRule : rule.chapterRule;
+      
+      if (!rulePattern) {
+        document.getElementById('testResults').innerHTML = `<span style="color:#f59e0b">${ruleType === 'volume' ? '分卷规则' : '章节规则'}为空，无法测试</span>`;
         document.getElementById('matchCount').textContent = '0';
         document.getElementById('noMatchCount').textContent = '0';
         return;
@@ -1272,7 +1373,11 @@ NO.3 大写NO
       const maxDisplay = 30;
       
       try {
-        const regex = new RegExp(rule.rule, 'gm');
+        const { pattern, flags } = parseInlineFlags(rulePattern);
+        const baseFlags = 'gm';
+        const allFlags = baseFlags + flags;
+        const uniqueFlags = [...new Set(allFlags.split(''))].join('');
+        const regex = new RegExp(pattern, uniqueFlags);
         
         let results = '';
         
@@ -1359,6 +1464,7 @@ NO.3 大写NO
     }
 
     // 拖拽排序
+    let dragMouseupBound = false;
     function bindDragEvents() {
       const cards = document.querySelectorAll('.rule-card');
       
@@ -1370,6 +1476,28 @@ NO.3 大写NO
         card.addEventListener('dragleave', handleDragLeave);
         card.addEventListener('drop', handleDrop);
       });
+
+      // 为 contenteditable 元素添加 mousedown 事件，临时禁用父级拖拽
+      // 这样在输入框内选择文本时不会触发卡片拖拽
+      const editables = document.querySelectorAll('.rule-card [contenteditable="true"]');
+      editables.forEach(el => {
+        el.addEventListener('mousedown', function(e) {
+          const card = this.closest('.rule-card');
+          if (card) card.setAttribute('draggable', 'false');
+        });
+      });
+
+      // document 级 mouseup 恢复所有卡片的 draggable（只绑定一次）
+      if (!dragMouseupBound) {
+        dragMouseupBound = true;
+        document.addEventListener('mouseup', function() {
+          document.querySelectorAll('.rule-card').forEach(card => {
+            if (parseInt(card.dataset.serial) !== 99) {
+              card.setAttribute('draggable', 'true');
+            }
+          });
+        });
+      }
     }
 
     function handleDragStart(e) {
@@ -1436,8 +1564,36 @@ NO.3 大写NO
     // 导入导出
     function exportJSON() {
       ensureSerialContinuity();
+      document.getElementById('exportModal').classList.add('active');
+    }
+
+    function closeExportModal() {
+      document.getElementById('exportModal').classList.remove('active');
+    }
+
+    function doExport() {
+      const format = document.querySelector('input[name="exportFormat"]:checked').value;
+      ensureSerialContinuity();
       const sorted = [...rules].sort((a, b) => a.serialNumber - b.serialNumber);
-      const dataStr = JSON.stringify(sorted, null, 2);
+      
+      let exportData;
+      if (format === 'original') {
+        // Legado 原版：去掉 volumeRule，将 chapterRule 改回 rule
+        exportData = sorted.map(r => {
+          const item = { ...r };
+          delete item.volumeRule;
+          if (item.chapterRule !== undefined) {
+            item.rule = item.chapterRule;
+            delete item.chapterRule;
+          }
+          return item;
+        });
+      } else {
+        // Legado with MD3：保留 chapterRule 和 volumeRule
+        exportData = sorted;
+      }
+      
+      const dataStr = JSON.stringify(exportData, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1445,7 +1601,8 @@ NO.3 大写NO
       a.download = 'myTxtChapterRule.json';
       a.click();
       URL.revokeObjectURL(url);
-      showToast('导出成功');
+      closeExportModal();
+      showToast('导出成功（' + (format === 'original' ? 'Legado 原版' : 'Legado with MD3') + '）');
     }
 
     function importJSON() {
@@ -1461,7 +1618,22 @@ NO.3 大写NO
         try {
           const data = JSON.parse(e.target.result);
           if (Array.isArray(data)) {
-            rules = data;
+            // 自动识别格式：原版用 rule 字段，MD3 用 chapterRule 字段
+            rules = data.map(item => {
+              const newItem = { ...item };
+              if (newItem.rule !== undefined && newItem.chapterRule === undefined) {
+                // 原版格式，转换为 MD3 格式
+                newItem.chapterRule = newItem.rule;
+                delete newItem.rule;
+              }
+              if (newItem.chapterRule === undefined) {
+                newItem.chapterRule = '';
+              }
+              if (newItem.volumeRule === undefined) {
+                newItem.volumeRule = '';
+              }
+              return newItem;
+            });
             ensureSerialContinuity();
             saveToStorage();
             renderTable();
